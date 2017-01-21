@@ -8,7 +8,6 @@
 #include <sstream>
 #include <vector>
 #include <ctime>
-#include <mpi.h>
 #include "Helper.h"
 
 using namespace std;
@@ -71,70 +70,31 @@ int main()
 		}
 		Strings[index] += input[i];
 	}
-//
-//
-//	double checkpoint = omp_get_wtime();
-//	for (int i = 0; i < n; i++)
-//	{
-//		AllStates[i] = aes.GenerateState(Strings[i]);
-//		AllStates[i] = aes.GetMainLoopOutput(AllStates[i], vect1);
-//	}
-//	double end = omp_get_wtime();
-//	cout << "Czas szyfrowania - wersja sekwencyjna: " << 1000 * (end - checkpoint) << endl;
-//
-//
-//
-//	omp_set_num_threads(2);
-//	checkpoint = omp_get_wtime();
-//#pragma omp parallel for
-//	for (int i = 0; i < n; i++)
-//	{
-//		AllStates[i] = aes.GenerateState(Strings[i]);
-//		AllStates[i] = aes.GetMainLoopOutput(AllStates[i], vect1);
-//	}
-//	end = omp_get_wtime();
-//	cout << "Czas szyfrowania - omp: " << 1000 * (end - checkpoint) << endl;
-//
-//	int finish;
-//	cin >> finish;
 
 
-
-
-	// Initialize the MPI environment
-	MPI_Init(NULL, NULL);
-
-	// Get the number of processes
-	int world_size;
-	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-
-	// Get the rank of the process
-	int world_rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
-	int xs = 11;
-	if (world_rank) xs = 1001;
-
-
-	for (int i = 1; i < world_size; i++)
+	double checkpoint = omp_get_wtime();
+	for (int i = 0; i < n; i++)
 	{
-		if (world_rank == i) {
-			for (int j = i - 1; j < n; j += world_size - 1)
-			{
-				AllStates[j] = aes.GenerateState(Strings[j]);
-				AllStates[j] = aes.GetMainLoopOutput(AllStates[j], vect1);
-				MPI_Send(AllStates[j], 4, MPI_BYTE, 0, j, MPI_COMM_WORLD);
-			}
-		}
+		AllStates[i] = aes.GenerateState(Strings[i]);
+		AllStates[i] = aes.Encrypt(AllStates[i], vect1);
 	}
-	if (!world_rank)
-	{
-		for (int i = 0; i < n; i++)
-		{
-			MPI_Recv(AllStates[i], 4, MPI_BYTE, (i % (world_size - 1)) + 1, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			//cout<<"WATEK "<<world_rank<<" !!!!!!\n";
-		}
-	}
+	double end = omp_get_wtime();
+	cout << "Czas szyfrowania - wersja sekwencyjna: " << 1000 * (end - checkpoint) << endl;
 
-	return 0;
+
+
+	omp_set_num_threads(2);
+	checkpoint = omp_get_wtime();
+#pragma omp parallel for
+	for (int i = 0; i < n; i++)
+	{
+		AllStates[i] = aes.GenerateState(Strings[i]);
+		AllStates[i] = aes.Encrypt(AllStates[i], vect1);
+	}
+	end = omp_get_wtime();
+	cout << "Czas szyfrowania - omp: " << 1000 * (end - checkpoint) << endl;
+
+	int finish;
+	cin >> finish;
+
 }

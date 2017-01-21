@@ -13,7 +13,7 @@ struct AES
 	static std::vector<std::vector<unsigned char>> GenerateKey(std::string input);
 	static std::vector<std::vector<unsigned char>> GenerateEnhancedKey(std::vector<std::vector<unsigned char>> vect1);
 	static unsigned char** GenerateState(std::string input);
-	static unsigned char** GetMainLoopOutput(unsigned char** input, std::vector<std::vector<unsigned char> > keys);
+	static unsigned char** Encrypt(unsigned char** input, std::vector<std::vector<unsigned char> > keys);
 	static unsigned char** AddRoundKey(unsigned char** matrix, unsigned char** key, int size = 4);
 	static unsigned char** GetSubBytes(unsigned char** tablica);
 	static unsigned char** GetShiftRowTable(unsigned char** firsttable);

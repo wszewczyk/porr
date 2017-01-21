@@ -167,7 +167,7 @@ unsigned char AES::GetSboxValue(unsigned char x)
 	return d;
 }
 
-unsigned char** AES::GetMainLoopOutput(unsigned char** input, std::vector<std::vector<unsigned char> > keys)
+unsigned char** AES::Encrypt(unsigned char** input, std::vector<std::vector<unsigned char> > keys)
 {
 	unsigned char*** KeyMatrix;
 	KeyMatrix = new unsigned char**[11];
