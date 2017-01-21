@@ -57,10 +57,10 @@ std::vector<std::vector<unsigned char>> AES::GenerateEnhancedKey(std::vector<std
 	for (int j = 0; j < 40; j++)
 	{
 		std::vector<unsigned char> v(4);
-		v = AES::MixCols(vect1, j);  // cala operacja rozszerzania wektora
+		v = AES::MixCols(vect1, j);  // Extanding vector
 		for (int i = 0; i < 4; i++)
 		{
-			vect1[i].push_back(v[i]);	//tworzenie kolejnych kluczy, nie robilem oddzielnych tylko wrzucilem do jednego dlugiego wektora
+			vect1[i].push_back(v[i]);	//Generating keys in one big vector (instead of separated)
 		}
 	}
 	return vect1;
@@ -105,15 +105,13 @@ std::vector<unsigned char> AES::MixCols(std::vector<std::vector<unsigned char>> 
 	unsigned char second[4];
 	std::vector<unsigned char> result(4);
 	if (IterationNumber % 4 == 0)
-	{	//PrintVector(vect1);
+	{	
 		vect1 = AES::RotateAndSubByteKeyColumn(vect1, IterationNumber + 3);
-		//PrintVector(vect1);
 		for (int i = 0; i < 4; i++)
 		{
 			first[i] = vect1[i][IterationNumber];
 			second[i] = vect1[i][IterationNumber + 3];
 			result[i] = first[i] ^ second[i] ^ AES::Rcon[10 * i + IterationNumber / 4];
-			//cout<<endl<< hex(first[i]) <<"  "<<hex(second[i])<<"  "<<hex(Rcon[10*i + IterationNumber])<<"  "<<hex(result[i])<<endl;
 		}
 	}
 	else
@@ -147,14 +145,14 @@ std::vector<std::vector<unsigned char>> AES::RotateAndSubByteKeyColumn(std::vect
 	for (int i = 0; i<vect.size(); i++)
 	{
 		vect[i][Columnindex] = buffer[i];
-		vect[i][Columnindex] = AES::getsboxvalue(vect[i][Columnindex]);
+		vect[i][Columnindex] = AES::GetSboxValue(vect[i][Columnindex]);
 
 	}
 
 	return vect;
 }
 
-unsigned char AES::getsboxvalue(unsigned char x)
+unsigned char AES::GetSboxValue(unsigned char x)
 {
 	unsigned char d;
 	for (int i = 0; i<256; i++)
@@ -183,24 +181,21 @@ unsigned char** AES::GetMainLoopOutput(unsigned char** input, std::vector<std::v
 	}
 	int KeyMatrixIndex = 0;
 	int d = 0;
-	//cout<<keys.size()<<" "<<keys[0].size();
 	for (int i = 0; i < keys[0].size(); i++)
 	{
 		if ((i) % 4 == 0 && i != 0)
 		{
 			d = 0;
 			KeyMatrixIndex++;
-			//PrintTable(KeyMatrix[KeyMatrixIndex],4);
 		}
 		for (int j = 0; j < keys.size(); j++)
-		{	//cout<<hex(keys[i][j])<<endl;
-			KeyMatrix[KeyMatrixIndex][j][d] = keys[j][i];	// w sumie niepotrzebnie tworze to KeyMatrix
-		}	//ale juz mi sie nie chce przerabiac
-		d++;	// to sa macierze kluczy tworzonych w key schedule
+		{
+			KeyMatrix[KeyMatrixIndex][j][d] = keys[j][i];
+		}
+		d++;
 	}
 
-
-	input = AddRoundKey(input, KeyMatrix[0]);	// tutaj zaczyna sie program wlasciwy, dzialanie zgodne z symulacja
+	input = AddRoundKey(input, KeyMatrix[0]);
 
 	for (int i = 1; i < 10; i++)
 	{
@@ -241,11 +236,8 @@ unsigned char ** AES::GetSubBytes(unsigned char ** tablica)
 		newchar[i] = new unsigned char[4];
 		for (int j = 0; j < 4; j++)
 		{
-			newchar[i][j] = getsboxvalue(tablica[i][j]);
-
-			//cout << hex(newchar[i][j]) << "  ";
+			newchar[i][j] = GetSboxValue(tablica[i][j]);
 		}
-		//cout << endl;
 	}
 	return newchar;
 }
@@ -285,15 +277,14 @@ std::vector<unsigned char> AES::MixColumns(std::vector<std::vector<unsigned char
 	unsigned char second[4];
 	std::vector<unsigned char> result(4);
 	if (IterationNumber % 4 == 0)
-	{	//PrintVector(vect1);
+	{
 		vect1 = RotateAndSubByteKeyColumn(vect1, IterationNumber + 3);
-		//PrintVector(vect1);
+
 		for (int i = 0; i < 4; i++)
 		{
 			first[i] = vect1[i][IterationNumber];
 			second[i] = vect1[i][IterationNumber + 3];
 			result[i] = first[i] ^ second[i] ^ Rcon[10 * i + IterationNumber / 4];
-			//cout<<endl<< hex(first[i]) <<"  "<<hex(second[i])<<"  "<<hex(Rcon[10*i + IterationNumber])<<"  "<<hex(result[i])<<endl;
 		}
 	}
 	else
@@ -324,7 +315,7 @@ unsigned char ** AES::MixColumn(unsigned char ** matrix)
 		{
 			column[i] = matrix[i][j];
 		}
-		gmix_column(column);
+		GmixColumn(column);
 		for (int i = 0; i < 4; i++)
 		{
 			mat[i][j] = column[i];
@@ -333,27 +324,19 @@ unsigned char ** AES::MixColumn(unsigned char ** matrix)
 	return mat;
 }
 
-void AES::gmix_column(unsigned char r[]) {		// ta funkcja jest skopiowana z neta, srednio ja ogarniam
-	unsigned char a[4];	// operacja mixcolumns
+void AES::GmixColumn(unsigned char r[]) {
+	unsigned char a[4];
 	unsigned char b[4];
 	unsigned char c;
 	unsigned char h;
-	/* The array 'a' is simply a copy of the input array 'r'
-	* The array 'b' is each element of the array 'a' multiplied by 2
-	* in Rijndael's Galois field
-	* a[n] ^ b[n] is element n multiplied by 3 in Rijndael's Galois field */
 	for (c = 0; c < 4; c++) {
 		a[c] = r[c];
-		/* h is 0xff if the high bit of r[c] is set, 0 otherwise */
 		h = (unsigned char)((signed char)r[c] >> 7);
-		/* arithmetic right shift, thus shifting in either zeros or ones */
 		b[c] = r[c] << 1;
-		/* implicitly removes high bit because b[c] is an 8-bit char,
-		so we xor by 0x1b and not 0x11b in the next line */
-		b[c] ^= 0x1B & h; /* Rijndael's Galois field */
+		b[c] ^= 0x1B & h;
 	}
-	r[0] = (b[0] ^ a[3] ^ a[2] ^ b[1] ^ a[1]); /* 2 * a0 + a3 + a2 + 3 * a1 */
-	r[1] = b[1] ^ a[0] ^ a[3] ^ b[2] ^ a[2]; /* 2 * a1 + a0 + a3 + 3 * a2 */
-	r[2] = b[2] ^ a[1] ^ a[0] ^ b[3] ^ a[3]; /* 2 * a2 + a1 + a0 + 3 * a3 */
-	r[3] = b[3] ^ a[2] ^ a[1] ^ b[0] ^ a[0]; /* 2 * a3 + a2 + a1 + 3 * a0 */
+	r[0] = (b[0] ^ a[3] ^ a[2] ^ b[1] ^ a[1]); 
+	r[1] = b[1] ^ a[0] ^ a[3] ^ b[2] ^ a[2];
+	r[2] = b[2] ^ a[1] ^ a[0] ^ b[3] ^ a[3];
+	r[3] = b[3] ^ a[2] ^ a[1] ^ b[0] ^ a[0];
 }

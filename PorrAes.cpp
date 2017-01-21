@@ -1,4 +1,3 @@
-#pragma once
 #include "stdafx.h"
 #include "stdafx.h"
 #include "AES.h"
@@ -9,6 +8,7 @@
 #include <sstream>
 #include <vector>
 #include <ctime>
+#include <mpi.h>
 #include "Helper.h"
 
 using namespace std;
@@ -22,21 +22,21 @@ int main()
 
 	std::vector<std::vector<unsigned char>> vect1(4, std::vector<unsigned char>(4));
 
-	string key = "klucz";
-	//przerobienie klucza na tablice CipherKey
+	string key = "abcdefgh";
+	//Generating array for key.
 	AES aes = AES();
 	vect1 = aes.GenerateKey(key);
 	for (int j = 0; j < 40; j++)
 	{
 		vector<unsigned char> v(4);
-		v = aes.MixColumns(vect1, j);  // cala operacja rozszerzania wektora
+		v = aes.MixColumns(vect1, j);  // extanding vector
 		for (int i = 0; i < 4; i++)
 		{
-			vect1[i].push_back(v[i]);	//tworzenie kolejnych kluczy, nie robilem oddzielnych tylko wrzucilem do jednego dlugiego wektora
+			vect1[i].push_back(v[i]);	//Generating keys in one big vector (instead of separated)
 		}
 	}
 
-	string input = "1234abcd1234abcd";
+	string input = "abcdfghijklmnopr";
 	string block = input;
 	for (int i = 1; i < numOfBlocks; i++)
 	{
@@ -47,10 +47,10 @@ int main()
 	int n = input.size() / 16;
 	if (n < d)
 	{
-		n++;	//n - liczba macierzy stanu
+		n++;	//n - number of matrix states
 	}
 
-	unsigned char*** AllStates = new unsigned char**[n];	//tworzenie wszystkich macierzy stanu
+	unsigned char*** AllStates = new unsigned char**[n];	//creating states
 	for (int i = 0; i < n; i++)
 	{
 		AllStates[i] = new unsigned char*[4];
@@ -71,24 +71,70 @@ int main()
 		}
 		Strings[index] += input[i];
 	}
+//
+//
+//	double checkpoint = omp_get_wtime();
+//	for (int i = 0; i < n; i++)
+//	{
+//		AllStates[i] = aes.GenerateState(Strings[i]);
+//		AllStates[i] = aes.GetMainLoopOutput(AllStates[i], vect1);
+//	}
+//	double end = omp_get_wtime();
+//	cout << "Czas szyfrowania - wersja sekwencyjna: " << 1000 * (end - checkpoint) << endl;
+//
+//
+//
+//	omp_set_num_threads(2);
+//	checkpoint = omp_get_wtime();
+//#pragma omp parallel for
+//	for (int i = 0; i < n; i++)
+//	{
+//		AllStates[i] = aes.GenerateState(Strings[i]);
+//		AllStates[i] = aes.GetMainLoopOutput(AllStates[i], vect1);
+//	}
+//	end = omp_get_wtime();
+//	cout << "Czas szyfrowania - omp: " << 1000 * (end - checkpoint) << endl;
+//
+//	int finish;
+//	cin >> finish;
 
 
-	double checkpoint = omp_get_wtime();
-	cout << n << " " << 1000 * (checkpoint - start) << " ";
 
-	omp_set_num_threads(2);
-#pragma omp parallel for
-	for (int i = 0; i < n; i++)
+
+	// Initialize the MPI environment
+	MPI_Init(NULL, NULL);
+
+	// Get the number of processes
+	int world_size;
+	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+	// Get the rank of the process
+	int world_rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+	int xs = 11;
+	if (world_rank) xs = 1001;
+
+
+	for (int i = 1; i < world_size; i++)
 	{
-		AllStates[i] = aes.GenerateState(Strings[i]);
-		AllStates[i] = aes.GetMainLoopOutput(AllStates[i], vect1);
+		if (world_rank == i) {
+			for (int j = i - 1; j < n; j += world_size - 1)
+			{
+				AllStates[j] = aes.GenerateState(Strings[j]);
+				AllStates[j] = aes.GetMainLoopOutput(AllStates[j], vect1);
+				MPI_Send(AllStates[j], 4, MPI_BYTE, 0, j, MPI_COMM_WORLD);
+			}
+		}
+	}
+	if (!world_rank)
+	{
+		for (int i = 0; i < n; i++)
+		{
+			MPI_Recv(AllStates[i], 4, MPI_BYTE, (i % (world_size - 1)) + 1, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			//cout<<"WATEK "<<world_rank<<" !!!!!!\n";
+		}
 	}
 
-	double end = omp_get_wtime();
-	cout << "CZAS LICZENIA: " << 1000 * (end - checkpoint) << endl;
-	cout << 1000 * (end - checkpoint) << endl;
-
-	int f;
-	cin >> f;
 	return 0;
 }

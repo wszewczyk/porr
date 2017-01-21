@@ -91,6 +91,7 @@
       <AdditionalIncludeDirectories>$(MSMPI_INC); $(MSMPI_INC)\x86</AdditionalIncludeDirectories>
       <AdditionalUsingDirectories>
       </AdditionalUsingDirectories>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

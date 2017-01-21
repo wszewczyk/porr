@@ -9,7 +9,7 @@ struct AES
 	static std::vector<std::vector<unsigned char>> RotateAndSubByteKeyColumn(std::vector<std::vector<unsigned char>> vect, int Columnindex);
 	static unsigned char sbox[256];
 	static unsigned char Rcon[40];
-	static unsigned char getsboxvalue(unsigned char x);
+	static unsigned char GetSboxValue(unsigned char x);
 	static std::vector<std::vector<unsigned char>> GenerateKey(std::string input);
 	static std::vector<std::vector<unsigned char>> GenerateEnhancedKey(std::vector<std::vector<unsigned char>> vect1);
 	static unsigned char** GenerateState(std::string input);
@@ -19,10 +19,8 @@ struct AES
 	static unsigned char** GetShiftRowTable(unsigned char** firsttable);
 	static unsigned char* RotateLeft(unsigned char* row);
 	static unsigned char** MixColumn(unsigned char** matrix);
-	static void gmix_column(unsigned char r[]);
+	static void GmixColumn(unsigned char r[]);
 	std::vector<unsigned char> MixColumns(std::vector<std::vector<unsigned char> > vect1, int IterationNumber);
 };
-
-
 
 #endif // !AES_H
