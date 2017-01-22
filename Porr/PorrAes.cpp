@@ -4,6 +4,7 @@
 #include <omp.h>
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
 # include <string>
 #include <sstream>
 #include <vector>
@@ -19,19 +20,19 @@ int main()
 
 	double start = omp_get_wtime();
 
-	std::vector<std::vector<unsigned char>> vect1(4, std::vector<unsigned char>(4));
+	std::vector<std::vector<unsigned char>> enchancedKey(4, std::vector<unsigned char>(4));
 
 	string key = "abcdefgh";
 	//Generating array for key.
 	AES aes = AES();
-	vect1 = aes.GenerateKey(key);
+	enchancedKey = aes.GenerateKey(key);
 	for (int j = 0; j < 40; j++)
 	{
 		vector<unsigned char> v(4);
-		v = aes.MixColumns(vect1, j);  // extanding vector
+		v = aes.MixColumns(enchancedKey, j);  // extanding vector
 		for (int i = 0; i < 4; i++)
 		{
-			vect1[i].push_back(v[i]);	//Generating keys in one big vector (instead of separated)
+			enchancedKey[i].push_back(v[i]);	//Generating keys in one big vector (instead of separated)
 		}
 	}
 
@@ -76,10 +77,11 @@ int main()
 	for (int i = 0; i < n; i++)
 	{
 		AllStates[i] = aes.GenerateState(Strings[i]);
-		AllStates[i] = aes.Encrypt(AllStates[i], vect1);
+		AllStates[i] = aes.Encrypt(AllStates[i], enchancedKey);
 	}
 	double end = omp_get_wtime();
-	cout << "Czas szyfrowania - wersja sekwencyjna: " << 1000 * (end - checkpoint) << endl;
+	double time_s = 1000 * (end - checkpoint);
+	cout << "Czas szyfrowania - wersja sekwencyjna: " << time_s << endl;
 
 
 
@@ -89,10 +91,16 @@ int main()
 	for (int i = 0; i < n; i++)
 	{
 		AllStates[i] = aes.GenerateState(Strings[i]);
-		AllStates[i] = aes.Encrypt(AllStates[i], vect1);
+		AllStates[i] = aes.Encrypt(AllStates[i], enchancedKey);
 	}
 	end = omp_get_wtime();
-	cout << "Czas szyfrowania - omp: " << 1000 * (end - checkpoint) << endl;
+	double time_p = 1000 * (end - checkpoint);
+	cout << "Czas szyfrowania - omp: " << time_p << endl;
+
+	ofstream myfile;
+	myfile.open("results.txt", std::ios::app);
+	myfile << numOfBlocks << " " << time_s << " " << time_p <<"\n";
+	myfile.close();
 
 	int finish;
 	cin >> finish;
