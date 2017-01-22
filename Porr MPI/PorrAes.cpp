@@ -17,7 +17,7 @@ using namespace std;
 int main(int argc, char* argv[])
 {
 	clock_t begin = clock();
-	int numOfBlocks = 100000;
+	int numOfBlocks = 50000;
 
 	double start = omp_get_wtime();
 
